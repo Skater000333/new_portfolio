@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from models.chat import ChatRequest, ChatResponse, ChatMessage
-from services.openrouter_service import openrouter_service
+from services.openrouter_service import get_openrouter_service
 import logging
 from typing import List
 
@@ -24,6 +24,7 @@ async def chat_endpoint(request: ChatRequest):
             raise HTTPException(status_code=400, detail="Message too long. Please keep it under 1000 characters.")
         
         # Get response from OpenRouter
+        openrouter_service = get_openrouter_service()
         response_text = await openrouter_service.get_chat_response(
             message=request.message.strip(),
             conversation_history=request.conversation_history or []
@@ -55,6 +56,7 @@ async def chat_health():
     """Health check endpoint for chat service"""
     try:
         # Basic check to ensure OpenRouter service is configured
+        openrouter_service = get_openrouter_service()
         has_api_key = bool(openrouter_service.api_key)
         return {
             "status": "healthy",
