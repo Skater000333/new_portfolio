@@ -1,12 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Bot } from 'lucide-react';
-import { portfolioData, chatbotPrompts } from '../mock/mock';
+import { portfolioData } from '../mock/mock';
+import axios from 'axios';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionId] = useState(() => Math.random().toString(36).substr(2, 9));
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -24,7 +29,7 @@ const ChatBot = () => {
     if (isOpen && messages.length === 0) {
       const greeting = {
         id: Date.now(),
-        text: chatbotPrompts.greeting,
+        text: "Hi! I'm Parth's AI assistant. I can help you learn more about his experience in Product Management, AI/ML projects, and leadership journey. What would you like to know?",
         sender: 'bot',
         timestamp: new Date()
       };
@@ -44,7 +49,7 @@ const ChatBot = () => {
   };
 
   const handleSendMessage = async (messageText = inputValue) => {
-    if (!messageText.trim()) return;
+    if (!messageText.trim() || isLoading) return;
 
     // Add user message
     const userMessage = {
@@ -58,47 +63,66 @@ const ChatBot = () => {
     setInputValue('');
     setIsLoading(true);
 
-    // Simulate bot response (will be replaced with actual API call later)
-    setTimeout(() => {
-      const botResponse = generateMockResponse(messageText);
-      const botMessage = {
+    try {
+      // Prepare conversation history for API
+      const conversationHistory = messages.map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.text,
+        timestamp: msg.timestamp
+      }));
+
+      // Call the backend API
+      const response = await axios.post(`${API}/chat`, {
+        message: messageText,
+        conversation_history: conversationHistory,
+        session_id: sessionId
+      });
+
+      if (response.data.status === 'success') {
+        const botMessage = {
+          id: Date.now() + 1,
+          text: response.data.response,
+          sender: 'bot',
+          timestamp: new Date()
+        };
+        
+        setMessages(prev => [...prev, botMessage]);
+      } else {
+        // Handle API error response
+        const errorMessage = {
+          id: Date.now() + 1,
+          text: response.data.response || "Sorry, I'm having trouble right now. Please try again!",
+          sender: 'bot',
+          timestamp: new Date()
+        };
+        
+        setMessages(prev => [...prev, errorMessage]);
+      }
+    } catch (error) {
+      console.error('Chat API error:', error);
+      
+      // Handle different types of errors
+      let errorText = "I'm experiencing some technical difficulties. Please try again in a moment! 🤖";
+      
+      if (error.response?.status === 429) {
+        errorText = "I'm getting a lot of questions right now! Please wait a moment and try again. ⏰";
+      } else if (error.response?.status >= 500) {
+        errorText = "I'm having server issues right now. Please try again shortly! 🔧";
+      } else if (error.code === 'NETWORK_ERROR') {
+        errorText = "I'm having trouble connecting. Please check your internet connection and try again! 📡";
+      }
+
+      const errorMessage = {
         id: Date.now() + 1,
-        text: botResponse,
+        text: errorText,
         sender: 'bot',
         timestamp: new Date()
       };
       
-      setMessages(prev => [...prev, botMessage]);
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
-  };
-
-  // Mock response generator (will be replaced with actual OpenRouter API)
-  const generateMockResponse = (userInput) => {
-    const input = userInput.toLowerCase();
-    
-    if (input.includes('ai') || input.includes('ml') || input.includes('machine learning')) {
-      return `Parth has extensive experience in AI/ML! He's developed fraud detection systems with 90% accuracy improvement, NILM algorithms with 97%+ accuracy, and published research on AI-driven groundwater monitoring. His work spans pharma, defense, and government sectors.`;
     }
-    
-    if (input.includes('product') || input.includes('management') || input.includes('manager')) {
-      return `As a Product Manager, Parth excels at leading cross-functional teams and delivering scalable solutions. He's managed budgets up to 5 Lakhs, coordinated with 10+ government bodies, and driven 50% increase in dashboard adoption across enterprise clients. His approach combines technical expertise with strategic thinking.`;
-    }
-    
-    if (input.includes('project') || input.includes('experience')) {
-      return `Parth's highlight projects include: AI fraud detection at PharmaSecure (90% faster detection), smart energy systems at CSIO (20% energy savings), and avalanche detection for DRDO (95% accuracy). Each project demonstrates his ability to solve complex technical challenges with real business impact.`;
-    }
-    
-    if (input.includes('leadership') || input.includes('team')) {
-      return `Parth is a natural leader - he's been State & District Roller Hockey Captain for 8+ years, led community education initiatives helping 60+ children, and managed cross-functional teams of 20+ members. His leadership style combines sports discipline with technical expertise.`;
-    }
-    
-    if (input.includes('education') || input.includes('background')) {
-      return `Parth holds a B.Tech in Computer Science from Punjab Engineering College and an Advanced Diploma in Statistics (Distinction) from Punjab University. He's also certified in Data Science, ML, and AWS from top institutions like IBM and Johns Hopkins.`;
-    }
-
-    // Default response
-    return `That's a great question! Parth's background spans Product Management, AI/ML development, and technical leadership across pharma, government, and defense sectors. He's known for delivering measurable business impact through data-driven solutions. Would you like to know more about any specific area of his expertise?`;
   };
 
   const handleSuggestionClick = (suggestion) => {
@@ -111,6 +135,11 @@ const ChatBot = () => {
       handleSendMessage();
     }
   };
+
+  const suggestions = [
+    "Tell me about Parth's AI/ML projects",
+    "What makes Parth unique as a Product Manager?"
+  ];
 
   return (
     <>
@@ -155,14 +184,14 @@ const ChatBot = () => {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-4">
+          <div className="flex-1 p-4 overflow-y-auto space-y-4 chat-messages">
             {messages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] p-3 rounded-lg text-sm ${
+                  className={`max-w-[80%] p-3 rounded-lg text-sm leading-relaxed ${
                     message.sender === 'user'
                       ? 'bg-black text-white ml-4'
                       : 'bg-gray-100 text-gray-800 mr-4'
@@ -174,10 +203,10 @@ const ChatBot = () => {
             ))}
 
             {/* Suggested Questions (only show initially) */}
-            {messages.length === 1 && (
+            {messages.length === 1 && !isLoading && (
               <div className="space-y-2">
                 <p className="text-xs text-gray-500 text-center">Try asking:</p>
-                {chatbotPrompts.suggestions.map((suggestion, index) => (
+                {suggestions.map((suggestion, index) => (
                   <button
                     key={index}
                     onClick={() => handleSuggestionClick(suggestion)}
@@ -215,6 +244,7 @@ const ChatBot = () => {
                 placeholder="Ask about Parth's experience..."
                 className="flex-1 p-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
                 disabled={isLoading}
+                maxLength={1000}
               />
               <button
                 onClick={() => handleSendMessage()}
@@ -225,6 +255,7 @@ const ChatBot = () => {
                 <Send className="w-4 h-4" />
               </button>
             </div>
+            <p className="text-xs text-gray-400 mt-1">Powered by AI • Session: {sessionId.slice(0, 6)}</p>
           </div>
         </div>
       )}
