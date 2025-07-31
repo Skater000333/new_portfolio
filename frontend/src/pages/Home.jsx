@@ -105,7 +105,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Highlight Projects */}
+      {/* Featured Work - Split into Work & Side Projects */}
       <section id="projects" className="py-24">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
@@ -113,24 +113,52 @@ const Home = () => {
               Featured Work
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
-              A selection of projects that showcase my expertise in AI/ML, IoT, and product management
+              A glimpse into my professional projects and personal initiatives that drive impact
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-            {portfolioData.highlightProjects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
+          {/* Work Projects Preview */}
+          <div className="mb-20">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-2xl md:text-3xl font-light tracking-tight text-black">
+                Work Projects
+              </h3>
+              <Link
+                to="/work-projects"
+                className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-black transition-colors duration-200 font-medium group"
+              >
+                <span>View All Work Projects</span>
+                <ExternalLink className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
+              </Link>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {portfolioData.workProjects.slice(0, 3).map((project) => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
           </div>
 
-          <div className="text-center">
-            <Link
-              to="/work-projects"
-              className="inline-flex items-center gap-2 text-black hover:text-gray-600 transition-colors duration-200 font-medium group"
-            >
-              <span>See All Projects</span>
-              <ExternalLink className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
-            </Link>
+          {/* Side Projects Preview */}
+          <div>
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-2xl md:text-3xl font-light tracking-tight text-black">
+                Side Projects
+              </h3>
+              <Link
+                to="/side-projects"
+                className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-black transition-colors duration-200 font-medium group"
+              >
+                <span>View All Side Projects</span>
+                <ExternalLink className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
+              </Link>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {portfolioData.sideProjects.map((project) => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
           </div>
         </div>
       </section>
