@@ -125,5 +125,12 @@ Feel free to dive deep into any area - from AI/ML projects to roller hockey cham
             logger.error(f"Unexpected error in OpenRouter service: {str(e)}")
             return "Something unexpected happened! Please try asking again, and if the issue persists, let Parth know. 🤖"
 
-# Create singleton instance
-openrouter_service = OpenRouterService()
+# Create singleton instance - will be initialized when first accessed
+openrouter_service = None
+
+def get_openrouter_service():
+    """Get or create the OpenRouter service instance"""
+    global openrouter_service
+    if openrouter_service is None:
+        openrouter_service = OpenRouterService()
+    return openrouter_service
